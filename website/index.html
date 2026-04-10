@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PLAYER ONE // Portfolio</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- CRT + Scanline Overlay -->
+  <div class="crt-overlay"></div>
+  <div class="scanlines"></div>
+  <div class="vignette"></div>
+
+  <!-- Particle Canvas Background -->
+  <canvas id="particles"></canvas>
+
+  <!-- Audio Visualizer Bar (persistent bottom) -->
+  <canvas id="visualizer"></canvas>
+
+  <!-- ==================== BOOT SEQUENCE ==================== -->
+  <div id="boot-screen">
+    <div class="boot-content">
+      <div class="boot-terminal">
+        <div id="boot-lines"></div>
+        <span class="boot-cursor">_</span>
+      </div>
+      <div class="boot-progress">
+        <div class="boot-progress-bar" id="boot-progress-bar"></div>
+      </div>
+      <div class="boot-prompt" id="boot-prompt">PRESS ANY KEY</div>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN MENU HUB ==================== -->
+  <div id="main-menu" class="hidden">
+    <!-- Floating nav bar -->
+    <nav class="nav-bar">
+      <a href="#hero" class="nav-logo">REVIN JUN</a>
+      <div class="nav-links">
+        <a href="#" data-section="about" class="nav-link">ABOUT</a>
+        <a href="#" data-section="academics" class="nav-link">ACADEMICS</a>
+        <a href="#" data-section="projects" class="nav-link">PROJECTS</a>
+        <a href="#" data-section="skills" class="nav-link">SKILLS</a>
+        <a href="#" data-section="fun" class="nav-link">FUN</a>
+        <a href="#" data-section="contact" class="nav-link">CONTACT</a>
+      </div>
+      <button class="theme-toggle" id="theme-toggle" title="Toggle light/dark mode">
+        <span class="theme-toggle-icon" id="theme-toggle-icon">&#9788;</span>
+      </button>
+      <div class="nav-status">
+        <span class="status-dot"></span>
+        <span class="status-text">ONLINE</span>
+      </div>
+    </nav>
+
+    <!-- ==================== HERO / TITLE SCREEN ==================== -->
+    <section id="hero" class="section active">
+      <div class="hero-content">
+        <div class="hero-tag">&gt; REVIN JUN</div>
+        <h1 class="hero-title">
+          <span class="hero-line line-1">PHYSICIST</span>
+          <span class="hero-line line-2"> </span>
+          <span class="hero-line line-3">&amp; CREATIVE</span>
+        </h1>
+        <div class="hero-subtitle">
+          <span class="typed-text" id="typed-subtitle"></span>
+          <span class="typed-cursor">|</span>
+        </div>
+        <div class="hero-menu">
+          <button class="menu-item" data-section="about">
+            <span class="menu-number">01</span>
+            <span class="menu-label">ABOUT</span>
+            <span class="menu-arrow">&rarr;</span>
+          </button>
+          <button class="menu-item" data-section="academics">
+            <span class="menu-number">02</span>
+            <span class="menu-label">ACADEMICS</span>
+            <span class="menu-arrow">&rarr;</span>
+          </button>
+          <button class="menu-item" data-section="projects">
+            <span class="menu-number">03</span>
+            <span class="menu-label">PROJECTS</span>
+            <span class="menu-arrow">&rarr;</span>
+          </button>
+          <button class="menu-item" data-section="skills">
+            <span class="menu-number">04</span>
+            <span class="menu-label">SKILLS</span>
+            <span class="menu-arrow">&rarr;</span>
+          </button>
+          <button class="menu-item" data-section="fun">
+            <span class="menu-number">05</span>
+            <span class="menu-label">FUN</span>
+            <span class="menu-arrow">&rarr;</span>
+          </button>
+          <button class="menu-item" data-section="contact">
+            <span class="menu-number">06</span>
+            <span class="menu-label">CONTACT</span>
+            <span class="menu-arrow">&rarr;</span>
+          </button>
+        </div>
+        <div class="hero-stats">
+          <div class="stat">
+            <span class="stat-value" data-count="999">0</span>
+            <span class="stat-label">HOURS PRODUCED</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" data-count="42">0</span>
+            <span class="stat-label">PROJECTS SHIPPED</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" data-count="15">0</span>
+            <span class="stat-label">TOOLS MASTERED</span>
+          </div>
+        </div>
+      </div>
+      <div class="hero-decoration">
+        <div class="hex-grid" id="hex-grid"></div>
+      </div>
+      <div class="scroll-overlay" id="scroll-overlay" style="display:none">
+        <div class="scroll-tooltip-box">
+          <div class="scroll-mouse">
+            <div class="scroll-wheel"></div>
+          </div>
+          <span>SCROLL TO EXPLORE</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== ABOUT ME ==================== -->
+    <section id="about" class="section">
+      <div class="section-header">
+        <span class="section-number">01</span>
+        <h2 class="section-title glitch" data-text="ABOUT">ABOUT</h2>
+        <div class="section-line"></div>
+      </div>
+      <div class="about-container">
+        <div class="terminal-window">
+          <div class="terminal-header">
+            <div class="terminal-dots">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+            </div>
+            <span class="terminal-title">revin@portfolio:~</span>
+          </div>
+          <div class="terminal-body">
+            <div class="terminal-line">
+              <span class="prompt">$</span>
+              <span class="command">cat about.txt</span>
+            </div>
+            <div class="terminal-output" id="about-terminal-output">
+              <p class="t-line">> <span class="highlight">Revin Jun</span></p>
+              <p class="t-line">> Applied Physics (Honors) at <span class="cyan">Harvard University</span>, Class of 2027.</p>
+              <p class="t-line">  Specializing in <span class="highlight">computational nanophotonics</span> and</p>
+              <p class="t-line">  <span class="highlight">polarimetric imaging</span>.</p>
+              <p class="t-line">&nbsp;</p>
+              <p class="t-line">> Research: RCWA pipeline development and optical system</p>
+              <p class="t-line">  calibration at the <span class="cyan">Capasso Group</span>. Previously studied</p>
+              <p class="t-line">  cephalopod neural signaling at <span class="cyan">OIST</span>, Okinawa.</p>
+              <p class="t-line">&nbsp;</p>
+              <p class="t-line">> Published at <span class="cyan">IEEE CLEO 2023</span>. President of Harvard</p>
+              <p class="t-line">  eSports (300+ members). AADT choreographer.</p>
+              <p class="t-line">&nbsp;</p>
+              <p class="t-line">> Also a music producer (<span class="cyan">FL Studio</span>), video editor</p>
+              <p class="t-line">  (<span class="cyan">Premiere Pro</span>), and 3D artist (<span class="cyan">Blender</span>).</p>
+            </div>
+            <div class="terminal-line">
+              <span class="prompt">$</span>
+              <span class="command">cat stats.json</span>
+            </div>
+            <div class="terminal-output">
+              <pre class="json-display">{
+  "role": "Researcher + Creative",
+  "location": "<span class="cyan">Cambridge, MA</span>",
+  "affiliation": "<span class="cyan">Harvard University</span>",
+  "lab": "<span class="cyan">Capasso Group, SEAS</span>",
+  "focus": "<span class="magenta">Nanophotonics &amp; Polarimetry</span>",
+  "status": "<span class="green">Open to opportunities</span>",
+  "languages": ["English", "Korean"]
+}</pre>
+            </div>
+            <div class="terminal-line">
+              <span class="prompt">$</span>
+              <span class="cursor blink">_</span>
+            </div>
+          </div>
+        </div>
+        <div class="about-cards">
+          <div class="info-card">
+            <div class="card-icon">&#9883;</div>
+            <h3>RESEARCH</h3>
+            <p>Metasurface simulation, RCWA pipelines, and polarimetric imaging at the Capasso Group and OIST</p>
+          </div>
+          <div class="info-card">
+            <div class="card-icon">&#9654;</div>
+            <h3>MEDIA PRODUCTION</h3>
+            <p>Video editing, motion graphics, and 3D modeling with Premiere Pro, After Effects, and Blender</p>
+          </div>
+          <div class="info-card">
+            <div class="card-icon">&#9835;</div>
+            <h3>MUSIC</h3>
+            <p>Composition and production across genres in FL Studio</p>
+          </div>
+          <div class="info-card">
+            <div class="card-icon">&#127918;</div>
+            <h3>LEADERSHIP</h3>
+            <p>President of Harvard eSports (300+ members), AADT choreographer, Red Bull campus partner</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== ACADEMICS ==================== -->
+    <section id="academics" class="section">
+      <div class="section-header">
+        <span class="section-number">02</span>
+        <h2 class="section-title glitch" data-text="ACADEMICS">ACADEMICS</h2>
+        <div class="section-line"></div>
+      </div>
+      <div class="research-grid">
+        <!-- Academics -->
+        <div class="research-card research-card-main research-card-academic">
+          <div class="research-card-header">
+            <span class="research-tag academic">EDUCATION</span>
+            <span class="research-lab">Harvard University</span>
+          </div>
+          <h3 class="research-card-title">Applied Physics (Honors), Class of 2027</h3>
+          <p class="research-card-desc">Coursework in electrodynamics, quantum mechanics, statistical mechanics, computational physics, and linear algebra. Focus on bridging simulation and experimental optics.</p>
+          <div class="research-card-topics">
+            <span class="research-topic">Quantum Mechanics</span>
+            <span class="research-topic">Electrodynamics</span>
+            <span class="research-topic">Computational Physics</span>
+            <span class="research-topic">Statistical Mechanics</span>
+            <span class="research-topic">Linear Algebra</span>
+          </div>
+        </div>
+
+        <!-- Publication -->
+        <a href="https://ieeexplore.ieee.org/abstract/document/10259428" target="_blank" rel="noopener" class="research-card research-card-link">
+          <div class="research-card-header">
+            <span class="research-tag publication">PUBLICATION</span>
+            <span class="research-year">CLEO 2023</span>
+          </div>
+          <h3 class="research-card-title">Conference on Lasers and Electro-Optics (CLEO)</h3>
+          <p class="research-card-desc">IEEE/Optica conference paper on metasurface simulation and characterization methods. Published in the CLEO 2023 proceedings and indexed on IEEE Xplore.</p>
+          <div class="research-card-meta">
+            <span class="research-meta-item">IEEE Xplore</span>
+            <span class="research-meta-item">DOI: 10.1109/CLEO/...</span>
+          </div>
+          <div class="research-card-topics">
+            <span class="research-topic">IEEE</span>
+            <span class="research-topic">Optics</span>
+            <span class="research-topic">Metasurfaces</span>
+            <span class="research-topic">RCWA</span>
+          </div>
+        </a>
+
+        <!-- Past Research: Capasso Group -->
+        <div class="research-card">
+          <div class="research-card-header">
+            <span class="research-tag past">PAST</span>
+            <span class="research-lab">Capasso Group, Harvard SEAS</span>
+          </div>
+          <h3 class="research-card-title">Computational Nanophotonics &amp; Metasurface Design</h3>
+          <p class="research-card-desc">Developed RCWA simulation pipelines for metasurface design and built optical calibration systems for polarimetric imaging. Worked on inverse design methods for flat optics operating across the visible and near-IR spectrum.</p>
+          <div class="research-card-topics">
+            <span class="research-topic">RCWA</span>
+            <span class="research-topic">Metasurfaces</span>
+            <span class="research-topic">Polarimetry</span>
+            <span class="research-topic">Inverse Design</span>
+            <span class="research-topic">Calibration</span>
+            <span class="research-topic">Python</span>
+          </div>
+        </div>
+
+        <!-- Past Research: OIST -->
+        <div class="research-card">
+          <div class="research-card-header">
+            <span class="research-tag past">PAST</span>
+            <span class="research-lab">OIST, Okinawa</span>
+          </div>
+          <h3 class="research-card-title">Cephalopod Neural Signaling</h3>
+          <p class="research-card-desc">Investigated neural signaling pathways in cephalopods, studying chromatophore control mechanisms and the relationship between neural activity and dynamic camouflage.</p>
+          <div class="research-card-topics">
+            <span class="research-topic">Neuroscience</span>
+            <span class="research-topic">Biology</span>
+            <span class="research-topic">Signal Processing</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== PROJECTS (FILM REEL) ==================== -->
+    <section id="projects" class="section">
+      <div class="section-header">
+        <span class="section-number">03</span>
+        <h2 class="section-title glitch" data-text="PROJECTS">PROJECTS</h2>
+        <div class="section-line"></div>
+      </div>
+      <!-- GitHub Projects -->
+      <div class="projects-showcase">
+        <a href="https://revinjun.com/tractor" class="project-card project-card-featured">
+          <div class="project-card-badge">FEATURED</div>
+          <div class="project-card-body">
+            <div class="project-card-icon">&#9824;</div>
+            <h3 class="project-card-title">Tractor</h3>
+            <p class="project-card-desc">A web-based multiplayer implementation of the Chinese card game Sheng Ji (Tractor). Play online with friends in real time.</p>
+            <div class="project-card-topics">
+              <span class="research-topic">JavaScript</span>
+              <span class="research-topic">Multiplayer</span>
+              <span class="research-topic">Card Game</span>
+              <span class="research-topic">WebSocket</span>
+            </div>
+          </div>
+          <div class="project-card-cta">
+            PLAY NOW <span>&rarr;</span>
+          </div>
+        </a>
+        <a href="https://github.com/cyxh/stockbot" target="_blank" rel="noopener" class="project-card">
+          <div class="project-card-body">
+            <div class="project-card-icon">&#128200;</div>
+            <h3 class="project-card-title">Stockbot</h3>
+            <p class="project-card-desc">Automated stock trading bot with technical analysis indicators and backtesting capabilities.</p>
+            <div class="project-card-topics">
+              <span class="research-topic">Python</span>
+              <span class="research-topic">Finance</span>
+              <span class="research-topic">Automation</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Film Reel -->
+      <div class="filmreel-container">
+        <div class="filmreel-instructions">
+          <span>&#8592; DRAG TO SCRUB &#8594;</span>
+        </div>
+        <div class="filmstrip-wrapper">
+          <div class="filmstrip-track" id="filmstrip-track">
+            <!-- Sprocket holes top -->
+            <div class="sprocket-row top">
+              <div class="sprocket"></div><div class="sprocket"></div><div class="sprocket"></div>
+              <div class="sprocket"></div><div class="sprocket"></div><div class="sprocket"></div>
+              <div class="sprocket"></div><div class="sprocket"></div><div class="sprocket"></div>
+              <div class="sprocket"></div><div class="sprocket"></div><div class="sprocket"></div>
+              <div class="sprocket"></div><div class="sprocket"></div><div class="sprocket"></div>
+              <div class="sprocket"></div><div class="sprocket"></div><div class="sprocket"></div>
+            </div>
+
+            <div class="filmstrip-frames" id="filmstrip-frames">
+              <!-- Populated dynamically from YouTube API, or falls back to placeholder -->
+            </div>
+
+            <!-- Sprocket holes bottom -->
+            <div class="sprocket-row bottom">
+              <div class="sprocket"></div><div class="sprocket"></div><div class="sprocket"></div>
+              <div class="sprocket"></div><div class="sprocket"></div><div class="sprocket"></div>
+              <div class="sprocket"></div><div class="sprocket"></div><div class="sprocket"></div>
+              <div class="sprocket"></div><div class="sprocket"></div><div class="sprocket"></div>
+              <div class="sprocket"></div><div class="sprocket"></div><div class="sprocket"></div>
+              <div class="sprocket"></div><div class="sprocket"></div><div class="sprocket"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="projects-footer">
+        <p class="projects-footer-text">Films, covers, and original productions.</p>
+        <a href="https://www.youtube.com/@cyxh." target="_blank" rel="noopener" class="projects-yt-link">
+          <span class="projects-yt-icon">&#9654;</span>
+          VIEW CHANNEL ON YOUTUBE
+        </a>
+      </div>
+    </section>
+
+    <!-- ==================== SKILLS (RPG SKILL TREE) ==================== -->
+    <section id="skills" class="section">
+      <div class="section-header">
+        <span class="section-number">04</span>
+        <h2 class="section-title glitch" data-text="SKILLS">SKILLS</h2>
+        <div class="section-line"></div>
+      </div>
+      <div class="skill-tree-hud">
+        <div class="skill-xp-bar">
+          <span class="xp-label">OVERALL XP</span>
+          <div class="xp-track">
+            <div class="xp-fill" style="width: 78%"></div>
+          </div>
+          <span class="xp-value">LVL 78 / 100</span>
+        </div>
+      </div>
+      <div class="skill-tree-container">
+        <div class="skill-branches">
+          <!-- AUDIO BRANCH -->
+          <div class="skill-branch" data-branch="audio">
+            <div class="tree-tier">
+              <div class="tree-node-wrapper">
+                <div class="skill-node core" data-skill="audio" data-level="95">
+                  <div class="node-icon">&#9835;</div>
+                  <div class="node-name">AUDIO</div>
+                  <div class="node-bar"><div class="node-bar-fill" style="width:95%"></div></div>
+                  <div class="node-level">LVL 95</div>
+                </div>
+                <div class="tree-connector"></div>
+              </div>
+            </div>
+            <div class="tree-tier">
+              <div class="tree-node-wrapper">
+                <div class="skill-node" data-skill="fl-studio" data-level="90">
+                  <div class="node-icon">FL</div>
+                  <div class="node-name">FL Studio</div>
+                  <div class="node-bar"><div class="node-bar-fill" style="width:90%"></div></div>
+                  <div class="node-level">LVL 90</div>
+                </div>
+                <div class="tree-connector"></div>
+              </div>
+              <div class="tree-node-wrapper">
+                <div class="skill-node" data-skill="instruments" data-level="80">
+                  <div class="node-icon">&#9839;</div>
+                  <div class="node-name">Instruments</div>
+                  <div class="node-bar"><div class="node-bar-fill" style="width:80%"></div></div>
+                  <div class="node-level">LVL 80</div>
+                </div>
+                <div class="tree-connector"></div>
+              </div>
+            </div>
+            <div class="tree-tier">
+              <div class="tree-node-wrapper">
+                <div class="skill-node" data-skill="mixing" data-level="85">
+                  <div class="node-icon">MX</div>
+                  <div class="node-name">Mixing</div>
+                  <div class="node-bar"><div class="node-bar-fill" style="width:85%"></div></div>
+                  <div class="node-level">LVL 85</div>
+                </div>
+              </div>
+              <div class="tree-node-wrapper">
+                <div class="skill-node" data-skill="mastering" data-level="75">
+                  <div class="node-icon">MA</div>
+                  <div class="node-name">Mastering</div>
+                  <div class="node-bar"><div class="node-bar-fill" style="width:75%"></div></div>
+                  <div class="node-level">LVL 75</div>
+                </div>
+              </div>
+              <div class="tree-node-wrapper">
+                <div class="skill-node" data-skill="guitar" data-level="85">
+                  <div class="node-icon">GT</div>
+                  <div class="node-name">Guitar</div>
+                  <div class="node-bar"><div class="node-bar-fill" style="width:85%"></div></div>
+                  <div class="node-level">LVL 85</div>
+                </div>
+              </div>
+              <div class="tree-node-wrapper">
+                <div class="skill-node" data-skill="keys" data-level="70">
+                  <div class="node-icon">KB</div>
+                  <div class="node-name">Keys</div>
+                  <div class="node-bar"><div class="node-bar-fill" style="width:70%"></div></div>
+                  <div class="node-level">LVL 70</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- VIDEO BRANCH -->
+          <div class="skill-branch" data-branch="video">
+            <div class="tree-tier">
+              <div class="tree-node-wrapper">
+                <div class="skill-node core" data-skill="video" data-level="88">
+                  <div class="node-icon">&#9654;</div>
+                  <div class="node-name">VIDEO</div>
+                  <div class="node-bar"><div class="node-bar-fill" style="width:88%"></div></div>
+                  <div class="node-level">LVL 88</div>
+                </div>
+                <div class="tree-connector"></div>
+              </div>
+            </div>
+            <div class="tree-tier">
+              <div class="tree-node-wrapper">
+                <div class="skill-node" data-skill="premiere" data-level="90">
+                  <div class="node-icon">Pr</div>
+                  <div class="node-name">Premiere Pro</div>
+                  <div class="node-bar"><div class="node-bar-fill" style="width:90%"></div></div>
+                  <div class="node-level">LVL 90</div>
+                </div>
+                <div class="tree-connector"></div>
+              </div>
+              <div class="tree-node-wrapper">
+                <div class="skill-node" data-skill="color" data-level="78">
+                  <div class="node-icon">&#9673;</div>
+                  <div class="node-name">Color Grading</div>
+                  <div class="node-bar"><div class="node-bar-fill" style="width:78%"></div></div>
+                  <div class="node-level">LVL 78</div>
+                </div>
+              </div>
+            </div>
+            <div class="tree-tier">
+              <div class="tree-node-wrapper">
+                <div class="skill-node" data-skill="after-effects" data-level="72">
+                  <div class="node-icon">Ae</div>
+                  <div class="node-name">After Effects</div>
+                  <div class="node-bar"><div class="node-bar-fill" style="width:72%"></div></div>
+                  <div class="node-level">LVL 72</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3D BRANCH -->
+          <div class="skill-branch" data-branch="threed">
+            <div class="tree-tier">
+              <div class="tree-node-wrapper">
+                <div class="skill-node core" data-skill="threed" data-level="82">
+                  <div class="node-icon">&#9883;</div>
+                  <div class="node-name">3D</div>
+                  <div class="node-bar"><div class="node-bar-fill" style="width:82%"></div></div>
+                  <div class="node-level">LVL 82</div>
+                </div>
+                <div class="tree-connector"></div>
+              </div>
+            </div>
+            <div class="tree-tier">
+              <div class="tree-node-wrapper">
+                <div class="skill-node" data-skill="blender" data-level="85">
+                  <div class="node-icon">BL</div>
+                  <div class="node-name">Blender</div>
+                  <div class="node-bar"><div class="node-bar-fill" style="width:85%"></div></div>
+                  <div class="node-level">LVL 85</div>
+                </div>
+                <div class="tree-connector"></div>
+              </div>
+            </div>
+            <div class="tree-tier">
+              <div class="tree-node-wrapper">
+                <div class="skill-node" data-skill="modeling" data-level="80">
+                  <div class="node-icon">MD</div>
+                  <div class="node-name">Modeling</div>
+                  <div class="node-bar"><div class="node-bar-fill" style="width:80%"></div></div>
+                  <div class="node-level">LVL 80</div>
+                </div>
+              </div>
+              <div class="tree-node-wrapper">
+                <div class="skill-node" data-skill="animation" data-level="65">
+                  <div class="node-icon">AN</div>
+                  <div class="node-name">Animation</div>
+                  <div class="node-bar"><div class="node-bar-fill" style="width:65%"></div></div>
+                  <div class="node-level">LVL 65</div>
+                </div>
+              </div>
+              <div class="tree-node-wrapper">
+                <div class="skill-node" data-skill="rendering" data-level="75">
+                  <div class="node-icon">RN</div>
+                  <div class="node-name">Rendering</div>
+                  <div class="node-bar"><div class="node-bar-fill" style="width:75%"></div></div>
+                  <div class="node-level">LVL 75</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Skill detail popup -->
+      <div class="skill-detail" id="skill-detail">
+        <div class="skill-detail-header">
+          <span class="skill-detail-icon" id="skill-detail-icon"></span>
+          <h3 id="skill-detail-name"></h3>
+        </div>
+        <div class="skill-detail-bar">
+          <div class="skill-detail-fill" id="skill-detail-fill"></div>
+        </div>
+        <p id="skill-detail-desc"></p>
+      </div>
+    </section>
+
+    <!-- ==================== FUN ==================== -->
+    <section id="fun" class="section">
+      <div class="section-header">
+        <span class="section-number">05</span>
+        <h2 class="section-title glitch" data-text="FUN">FUN</h2>
+        <div class="section-line"></div>
+      </div>
+      <div class="recs-subtitle">What I listen to, play, and use.</div>
+      <div class="recs-container">
+        <div class="rec-shelf">
+          <!-- Category: Music Recs (from playlist #1) -->
+          <div class="rec-category" id="playlist-section">
+            <div class="rec-category-label">
+              <span class="rec-cat-icon">&#9835;</span>
+              MUSIC RECS
+            </div>
+            <div class="rec-items rec-items-row" id="playlist-tracks">
+              <div class="spotify-loading">Loading playlist...</div>
+            </div>
+          </div>
+
+          <!-- Category: Recently Played (Spotify) -->
+          <div class="rec-category" id="spotify-section">
+            <div class="rec-category-label">
+              <span class="rec-cat-icon">&#9835;</span>
+              <span id="spotify-label">RECENTLY PLAYED</span>
+              <span class="spotify-badge" id="spotify-badge"></span>
+            </div>
+            <div class="rec-items rec-items-row" id="spotify-tracks">
+              <div class="spotify-loading">Loading tracks...</div>
+            </div>
+          </div>
+
+          <!-- Category: Riot Games -->
+          <div class="rec-category" id="riot-section">
+            <div class="rec-category-label">
+              <span class="rec-cat-icon">&#9876;</span>
+              <span id="riot-label">RIOT GAMES</span>
+              <span class="gaming-badge" id="riot-badge"></span>
+            </div>
+            <div class="rec-items gaming-cards" id="riot-cards">
+              <div class="spotify-loading">Loading Riot data...</div>
+            </div>
+          </div>
+
+          <!-- Category: Steam -->
+          <div class="rec-category" id="steam-section">
+            <div class="rec-category-label">
+              <span class="rec-cat-icon">&#127918;</span>
+              <span id="steam-label">STEAM</span>
+              <span class="gaming-badge" id="steam-badge"></span>
+            </div>
+            <div class="rec-items gaming-cards" id="steam-cards">
+              <div class="spotify-loading">Loading Steam data...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== CONTACT ==================== -->
+    <section id="contact" class="section">
+      <div class="section-header">
+        <span class="section-number">06</span>
+        <h2 class="section-title glitch" data-text="CONTACT">CONTACT</h2>
+        <div class="section-line"></div>
+      </div>
+      <div class="contact-container">
+        <div class="contact-arcade">
+          <div class="arcade-screen">
+            <div class="arcade-text">
+              <p class="arcade-prompt">&gt; GET IN TOUCH</p>
+              <p class="arcade-sub">Feel free to reach out via any of the channels below.</p>
+            </div>
+            <div class="contact-links">
+              <a href="mailto:rjun@college.harvard.edu" class="contact-btn">
+                <span class="btn-icon">&#9993;</span>
+                <span class="btn-text">EMAIL</span>
+                <span class="btn-sub">rjun@college.harvard.edu</span>
+              </a>
+              <a href="https://www.linkedin.com/in/revinjun" class="contact-btn" target="_blank" rel="noopener">
+                <span class="btn-icon">&#128279;</span>
+                <span class="btn-text">LINKEDIN</span>
+                <span class="btn-sub">linkedin.com/in/revinjun</span>
+              </a>
+              <a href="https://github.com/cyxh" target="_blank" rel="noopener" class="contact-btn">
+                <span class="btn-icon">&#128421;</span>
+                <span class="btn-text">GITHUB</span>
+                <span class="btn-sub">github.com/cyxh</span>
+              </a>
+              <a href="#" class="contact-btn">
+                <span class="btn-icon">&#128172;</span>
+                <span class="btn-text">DISCORD</span>
+                <span class="btn-sub">cyxh</span>
+              </a>
+            </div>
+          </div>
+          <div class="arcade-controls">
+            <div class="arcade-joystick">
+              <div class="joystick-base"></div>
+              <div class="joystick-stick"></div>
+            </div>
+            <div class="arcade-buttons">
+              <div class="arcade-btn a">A</div>
+              <div class="arcade-btn b">B</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+      <div class="footer-content">
+        <span class="footer-text">REVIN JUN &copy; 2026</span>
+        <span class="footer-version">v1.0.0</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

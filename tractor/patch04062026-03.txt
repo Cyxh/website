@@ -1,0 +1,15 @@
+- When hovering over the card to select, the cards to the left of the selected card should not move more than the selected card. Because the cards are overlapping each other, the cards to the left of the selected card do not need to move an additional distance (in other words, we do not need to "clear" the selected card so that it is by itself and not overlapping anything). Adjust the spacing so that the deck is still in the middle accordingly.
+- When a card is selected, its top edge disappears and appears cut off. Fix this.
+- When a hand is played by a player, the cards should appear near their name in the opponent's view. Currently they are too close to the center, and this (the distance of the cards from the center and also the size of the cards) should also scale with the window size.
+- Remove the sound for now, but keep the implementation that allows it to happen
+- When cards are dealt, they should be dealt organized.
+- Add a button once dealing is done that persists to the end of the game that reorganizes the cards to the default arrangement.
+- The card shown in the "current bid" area is not the same as the design of the actual card.
+- All players should have the dark box around their name, icon, level, and card count, not just yourself from your view.
+- The chat box should be longer (vertically larger) to fill the space on the side, and its height should also scale with window size.
+- When moving cards around, an animation should play that physically shows where the card would be placed. The card should follow the cursor as it is dragged to its new place and the space in the hand where it would be placed should be opened, much like the hand would behave if a card was selected.
+
+UNADDED FROM LAST:
+- Add a special aura or effect of some kind (a small animation would be cool) to trump cards, and another distinct (maybe less cooler) aura for point cards.
+- Trump rank cards and jokers, on deal, should be kept in a separate category. The "bid trump" button should only appear under this category, and other cards should not be able to be selected to be bid for trump at all. When the "confirm start round" button mentioned earlier is pressed by every player and play begins, the trumps are put back in the normal hand.
+

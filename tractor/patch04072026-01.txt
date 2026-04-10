@@ -1,0 +1,11 @@
+- If the defending team wins points, there is no need to give the +x points indicator or to have the animation, as the points remain the same. Just have the indicator that one of the defending players won, without the +x points indicator.
+- The first hand does not play the "hand won" indicator and have a delay before next hand for some reason.
+- Add an option to resize the hand area by clicking and dragging the gold line vertically up or down. 
+- The point penalties for combination tricks currently does not update the score counter. Penalties for defending team subtract from the defender's side and add to the attacking, penalties for attacking team subtract from attacking and add to defending. 
+- When displaying played tricks on the table, overlap cards in components together like they are in the hand. For example, if Ace-King-King-Ten-Ten-Nine-Nine is played, the Ace should be by itself, the King pair should overlap, and the Ten-Ten-Nine-Nine tractor should overlap.
+- When the first trick in a round (a round referring to the starting player playing a trick and subsequent players trying to match the trick) is played, display what has been played in a text box in the middle. For example, if Ace-King-King-Ten-Ten-Nine-Nine is played, the textbox should say "Tractor + Pair + Single". The text should be in descending order of component size. If something like Queen-Ten-Five-Four in spades is played and everyone is out of spades, the textbox should say "Single x4". 
+- In the table, if the played trick is too large to display horizontally and starts to overlap with other player's tricks in the middle, for example, the very unlikely Ace-Ace-King-King Ten-Ten-Nine-Nine, then components should be shown vertically on top of each other.
+- The trump rank/jokers category should have slightly more vertical padding.
+- Make it so that the default size of the area of with the hand with no cards is the same as the hand having cards. Currently, when the first card is dealt, the hand area increases vertically to accommodate the cards.
+- Include an animation when a player receives their first trump on deal to smoothly add the "trump rank/jokers" section to the top instead of just spawning it in.
+- The "trump rank/jokers" section should be centered like the cards that are dealt.

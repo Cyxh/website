@@ -1,0 +1,9 @@
+- The default kitty size should, by default, be 8 cards.
+- The default penalty should be 2 to the power of n times the points in the kitty, where n is the number of cards the last hand was won with.
+- If a player attempts a combination that another player can beat (for example, Ace & King of spades where spades are not trump, and someone else has another ace of spades), then the player incurs a penalty equal to ten points times the number of cards that are beatable. For example, if someone attempts Ace-Queen-Queen, and someone else has a King pair, the person who played Ace-Queen-Queen would incur a twenty point penalty for the queen pair.
+- The cards should be designed better if possible. standard card designs are fine, paint for face cards would be ideal
+- The text and UI should be larger and should scale with the window size. Notably, the sidebar, player icons, and text on the board.
+- When the host of the game presses start, the button should no longer be pressable and replaced with a loading symbol until the game begins.
+- When the game starts, every player should not instantly get their entire hand. The players should receive one card at a time, rotating through each player, with a slight delay between each card that allows for bids to happen as players get their cards. For the very first deal, a kitty player does not exist at the beginning - the first person to bid becomes the player with the kitty, and therefore also becomes the defending team, along with their partners. In finding friends, the first person to bid becomes the player with the kitty, and therefore the person who defines the card(s) their friends will be defined by. The player who receives the first card in the deal is random.
+- Add an animation for dealing individual cards to the players at the beginning of each round, and another for whenever a player plays a card during the round.
+- Add more design to the table, currently it is just a green circle.
