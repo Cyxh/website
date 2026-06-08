@@ -728,6 +728,127 @@ let particles = [];
 let mouse = { x: -9999, y: -9999 };
 const mouseRadius = 180;
 
+// ------------------------------------------------------------------
+// SCROLL-REACTIVE FIELD ("SPECTRUM DRIFT")
+// The dots/lines/blobs continuously crossfade toward each section's
+// identity color + behavior as you scroll. Everything is driven by a
+// single eased "scroll index" so it morphs smoothly, never snaps.
+// ------------------------------------------------------------------
+const SECTION_IDS = ['hero', 'about', 'academics', 'projects', 'skills', 'fun', 'contact'];
+const sectionEls = SECTION_IDS.map(id => document.getElementById(id));
+
+// Per-section targets, in DOM/scroll order (RGB triples derived from the palette).
+const SECTION_COLORS    = [[94,173,181],[79,156,150],[78,128,176],[160,112,176],[128,112,176],[192,128,96],[90,154,122]]; // dot/line tint
+const SECTION_ACCENT    = [[90,122,133],[90,154,122],[79,134,192],[192,128,96],[90,154,122],[176,160,96],[90,154,122]];   // secondary blob
+const SECTION_INTENSITY = [1.0, 0.78, 0.80, 0.72, 0.92, 1.05, 0.85]; // readability dial (dims line/blob alpha over text-heavy zones)
+const SECTION_CONNDIST  = [140, 130, 135, 150, 160, 150, 150];        // connection reach (px)
+const SECTION_GRIDSNAP  = [0, 0, 0.0030, 0, 0.0040, 0, 0];            // lattice pull (academics/skills read architectural)
+const SECTION_CONVERGE  = [0, 0, 0, 0, 0, 0, 0.0040];                 // center gather at contact ("SYNC LOCK / online")
+
+// Live (eased) state — seeded to the hero (first section) palette so the field
+// starts at the muted hero identity in both themes, with no color "drain" on reveal.
+let fieldTint = [94, 173, 181];
+let fieldAccent = [90, 122, 133];
+let fieldIntensity = 1;
+let connDist = 150;
+let gridSnap = 0;
+let converge = 0;
+let scrollIdx = 0, scrollIdxTarget = 0;
+let lastScrollY = window.scrollY, flow = 0;
+const SPARK_ENABLED = true; // brief scroll-velocity brightening; first thing to cut if it ever reads as noise
+
+// One radial-glow gradient built per frame (shared by all glowing dots) instead of one per dot.
+let glowGrad = null;
+// Under reduced-motion the field is static; redraw only when something actually changed.
+let needsRender = true;
+
+let reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', (e) => {
+  reduceMotion = e.matches;
+  needsRender = true;
+});
+
+// Continuous section index (e.g. 2.6 = 60% from academics into projects).
+// Called once per frame from the rAF loop (coalesces high-rate scroll events; offsetTop stays fresh).
+function updateScrollIndex() {
+  const cy = window.scrollY + window.innerHeight * 0.4; // sightline at 40% viewport height
+  // During boot the sections are display:none (all offsetTop === 0); default to hero until laid out.
+  let laidOut = false;
+  for (let k = 0; k < sectionEls.length; k++) {
+    if (sectionEls[k] && sectionEls[k].offsetTop > 0) { laidOut = true; break; }
+  }
+  if (!laidOut) { scrollIdxTarget = 0; return; }
+
+  let i = 0;
+  for (let k = 0; k < sectionEls.length; k++) {
+    if (sectionEls[k] && sectionEls[k].offsetTop <= cy) i = k;
+  }
+  const cur = sectionEls[i], nxt = sectionEls[i + 1];
+  let f = 0;
+  if (cur && nxt) {
+    f = Math.min(1, Math.max(0, (cy - cur.offsetTop) / Math.max(1, nxt.offsetTop - cur.offsetTop)));
+  }
+  scrollIdxTarget = i + f;
+}
+// The scroll event only wakes the renderer (for reduced-motion); the actual read happens in the rAF loop.
+window.addEventListener('scroll', () => { needsRender = true; }, { passive: true });
+
+// Lerp a per-section scalar array toward the current eased target.
+function lerpSectionScalar(arr, idx, frac, cur, ease) {
+  const a = arr[idx];
+  const b = idx + 1 < arr.length ? arr[idx + 1] : a;
+  return cur + ((a + (b - a) * frac) - cur) * ease;
+}
+
+function clamp255(v) { return v < 0 ? 0 : v > 255 ? 255 : v | 0; }
+
+// --- HSL interpolation for the tint, so warm crossfades (e.g. skills->fun->contact)
+// keep their saturation instead of passing through a muddy gray midpoint. ---
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+  let h = 0, s = 0; const l = (max + min) / 2;
+  if (d !== 0) {
+    s = d / (1 - Math.abs(2 * l - 1));
+    if (max === r) h = ((g - b) / d) % 6;
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60;
+    if (h < 0) h += 360;
+  }
+  return [h, s, l];
+}
+
+function hslToRgb(h, s, l) {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const hp = h / 60;
+  const x = c * (1 - Math.abs((hp % 2) - 1));
+  let r = 0, g = 0, b = 0;
+  if (hp < 1) { r = c; g = x; }
+  else if (hp < 2) { r = x; g = c; }
+  else if (hp < 3) { g = c; b = x; }
+  else if (hp < 4) { g = x; b = c; }
+  else if (hp < 5) { r = x; b = c; }
+  else { r = c; b = x; }
+  const m = l - c / 2;
+  return [(r + m) * 255, (g + m) * 255, (b + m) * 255];
+}
+
+// Interpolate two RGB colors through HSL via the shortest hue path; hold the
+// hue of a near-gray endpoint so low-saturation colors don't swing wildly.
+function lerpRgbViaHsl(c1, c2, t) {
+  const a = rgbToHsl(c1[0], c1[1], c1[2]);
+  const b = rgbToHsl(c2[0], c2[1], c2[2]);
+  let h1 = a[0], h2 = b[0];
+  if (a[1] < 0.05) h1 = h2;
+  if (b[1] < 0.05) h2 = h1;
+  let dh = h2 - h1;
+  if (dh > 180) dh -= 360; else if (dh < -180) dh += 360;
+  let h = h1 + dh * t;
+  if (h < 0) h += 360; else if (h >= 360) h -= 360;
+  return hslToRgb(h, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t);
+}
+
 document.addEventListener('mousemove', (e) => {
   mouse.x = e.clientX;
   mouse.y = e.clientY;
@@ -759,49 +880,85 @@ class Particle {
     this.color = ['#6b8a92', '#8a6b82', '#7a7490', '#7b9499', '#8e7e96'][Math.floor(Math.random() * 5)];
     this.pulseSpeed = Math.random() * 0.02 + 0.005;
     this.pulsePhase = Math.random() * Math.PI * 2;
+
+    // Scroll-reactive field: per-dot color jitter (keeps the multi-tone texture
+    // once the whole field is tinted) + a static depth for 3D layering.
+    this.hueJitter = (Math.random() - 0.5);
+    this.z = Math.random();
+    this.depth = 0.45 + this.z * 0.85; // near dots: bigger/brighter; far dots: tiny/dim
+    this.baseSize *= this.depth;
+    this.size = this.baseSize;
+    this.baseOpacity *= this.depth;
+    this.opacity = this.baseOpacity;
   }
 
   update(time) {
-    this.x += this.speedX;
-    this.y += this.speedY;
+    if (!reduceMotion) {
+      this.x += this.speedX;
+      this.y += this.speedY;
 
-    if (this.x < 0 || this.x > particleCanvas.width) this.speedX *= -1;
-    if (this.y < 0 || this.y > particleCanvas.height) this.speedY *= -1;
+      if (this.x < 0 || this.x > particleCanvas.width) this.speedX *= -1;
+      if (this.y < 0 || this.y > particleCanvas.height) this.speedY *= -1;
 
-    // Subtle pulse (no flashing)
-    const pulse = Math.sin(time * this.pulseSpeed + this.pulsePhase);
-    this.opacity = this.baseOpacity + pulse * 0.03;
-    this.size = this.baseSize + pulse * 0.1;
+      // Subtle pulse (no flashing)
+      const pulse = Math.sin(time * this.pulseSpeed + this.pulsePhase);
+      this.opacity = this.baseOpacity + pulse * 0.03;
+      this.size = this.baseSize + pulse * 0.1;
 
-    // Mouse repulsion
-    const dx = this.x - mouse.x;
-    const dy = this.y - mouse.y;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist < mouseRadius && dist > 0) {
-      const force = (mouseRadius - dist) / mouseRadius * 0.8;
-      this.x += (dx / dist) * force;
-      this.y += (dy / dist) * force;
-      this.opacity = Math.min(1, this.opacity + force * 0.5);
-      this.size = this.baseSize + force * 2;
+      // Structural forces tied to the active section: a coarse lattice pull
+      // (academics/skills look architectural) and a center gather at contact.
+      if (gridSnap > 0) {
+        this.x += (Math.round(this.x / 120) * 120 - this.x) * gridSnap;
+        this.y += (Math.round(this.y / 120) * 120 - this.y) * gridSnap;
+      }
+      if (converge > 0) {
+        this.x += (particleCanvas.width * 0.5 - this.x) * converge;
+        this.y += (particleCanvas.height * 0.5 - this.y) * converge;
+      }
+    } else {
+      this.opacity = this.baseOpacity;
+      this.size = this.baseSize;
+    }
+
+    // Mouse repulsion (disabled under reduced-motion — pointer-driven motion still reads as motion)
+    if (!reduceMotion) {
+      const dx = this.x - mouse.x;
+      const dy = this.y - mouse.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < mouseRadius && dist > 0) {
+        const force = (mouseRadius - dist) / mouseRadius * 0.8;
+        this.x += (dx / dist) * force;
+        this.y += (dy / dist) * force;
+        this.opacity = Math.min(1, this.opacity + force * 0.5);
+        this.size = this.baseSize + force * 2;
+      }
     }
   }
 
   draw() {
+    // Tint toward the active section color; hueJitter keeps a little warm/cool
+    // variation so the field isn't flat monochrome.
+    const j = this.hueJitter * 22;
+    const col = 'rgb(' + clamp255(fieldTint[0] + j) + ',' + clamp255(fieldTint[1]) + ',' + clamp255(fieldTint[2] - j) + ')';
+
     pCtx.beginPath();
     pCtx.arc(this.x, this.y, Math.max(0.1, this.size), 0, Math.PI * 2);
-    pCtx.fillStyle = this.color;
+    pCtx.fillStyle = col;
     pCtx.globalAlpha = Math.max(0, this.opacity);
     pCtx.fill();
-    // Glow for larger particles
-    if (this.size > 1.5) {
-      pCtx.beginPath();
-      pCtx.arc(this.x, this.y, this.size * 3, 0, Math.PI * 2);
-      const grad = pCtx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 3);
-      grad.addColorStop(0, this.color);
-      grad.addColorStop(1, 'transparent');
-      pCtx.fillStyle = grad;
+    // Glow for larger particles — reuse the one per-frame unit gradient (glowGrad),
+    // positioned/scaled per dot, instead of allocating a gradient each time.
+    if (this.size > 1.5 && glowGrad) {
+      const r = this.size * 3;
       pCtx.globalAlpha = this.opacity * 0.15;
+      pCtx.save();
+      pCtx.translate(this.x, this.y);
+      pCtx.scale(r, r);
+      pCtx.beginPath();
+      pCtx.arc(0, 0, 1, 0, Math.PI * 2);
+      pCtx.fillStyle = glowGrad;
       pCtx.fill();
+      pCtx.restore();
     }
     pCtx.globalAlpha = 1;
   }
@@ -820,15 +977,64 @@ function isLightTheme() {
   return document.documentElement.getAttribute('data-theme') === 'light';
 }
 
-function lineColor(alpha) {
-  return isLightTheme() ? `rgba(0, 0, 0, ${alpha})` : `rgba(255, 255, 255, ${alpha})`;
-}
-
 function drawParticles(time) {
+  requestAnimationFrame(drawParticles); // schedule first so early-returns can't stall the loop
+
+  // Recompute the scroll target once per frame (coalesces high-rate scroll events; offsetTop stays fresh).
+  // Under reduced-motion the field is static, so only do work on a frame that something changed.
+  if (reduceMotion) {
+    if (!needsRender) return;
+    needsRender = false;
+  }
+  updateScrollIndex();
+
   pCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
 
-  // Subtle gradient blobs
-  const t = (time || 0) * 0.0003;
+  // --- Scroll-reactive interpolation engine (eased once per frame, not per particle) ---
+  // Under reduced-motion we snap (ease=1) so color tracks the user's own scrolling
+  // with no autonomous animation.
+  const ease = reduceMotion ? 1 : 0.06;
+  scrollIdx += (scrollIdxTarget - scrollIdx) * ease;
+  const si = Math.max(0, Math.min(SECTION_COLORS.length - 1, Math.floor(scrollIdx)));
+  const sf = Math.max(0, Math.min(1, scrollIdx - si));
+  const cA = SECTION_COLORS[si], cB = SECTION_COLORS[si + 1] || cA;
+  const aA = SECTION_ACCENT[si], aB = SECTION_ACCENT[si + 1] || aA;
+  // Tint interpolates through HSL (keeps saturation across warm crossfades); accent stays RGB (sub-perceptual at blob alpha).
+  const tintTarget = lerpRgbViaHsl(cA, cB, sf);
+  for (let c = 0; c < 3; c++) {
+    fieldTint[c]   += (tintTarget[c] - fieldTint[c]) * ease;
+    fieldAccent[c] += ((aA[c] + (aB[c] - aA[c]) * sf) - fieldAccent[c]) * ease;
+  }
+  fieldIntensity = lerpSectionScalar(SECTION_INTENSITY, si, sf, fieldIntensity, ease);
+  connDist       = lerpSectionScalar(SECTION_CONNDIST, si, sf, connDist, ease);
+  gridSnap       = reduceMotion ? 0 : lerpSectionScalar(SECTION_GRIDSNAP, si, sf, gridSnap, ease);
+  converge       = reduceMotion ? 0 : lerpSectionScalar(SECTION_CONVERGE, si, sf, converge, ease);
+
+  // Scroll-velocity "spark" — brief brightening while actively scrolling, coasts back to calm.
+  const rawVel = window.scrollY - lastScrollY;
+  lastScrollY = window.scrollY;
+  flow += (rawVel - flow) * (Math.abs(rawVel) > Math.abs(flow) ? 0.25 : 0.06);
+  const spark = (SPARK_ENABLED && !reduceMotion) ? Math.min(0.04, Math.abs(flow) / 40 * 0.04) : 0;
+
+  // Line color is constant for the whole frame — compute the rgba prefix once, not per line.
+  let linePrefix;
+  if (isLightTheme()) {
+    linePrefix = 'rgba(0, 0, 0, '; // pure black in light theme for contrast
+  } else {
+    const m = 0.28; // mix the section tint toward white for legibility on #0c0c10
+    const lr = clamp255(fieldTint[0] + (255 - fieldTint[0]) * m);
+    const lg = clamp255(fieldTint[1] + (255 - fieldTint[1]) * m);
+    const lb = clamp255(fieldTint[2] + (255 - fieldTint[2]) * m);
+    linePrefix = 'rgba(' + lr + ', ' + lg + ', ' + lb + ', ';
+  }
+
+  // One radial-glow gradient for the whole frame (unit scale; positioned per dot via transform).
+  glowGrad = pCtx.createRadialGradient(0, 0, 0, 0, 0, 1);
+  glowGrad.addColorStop(0, 'rgb(' + (fieldTint[0] | 0) + ',' + (fieldTint[1] | 0) + ',' + (fieldTint[2] | 0) + ')');
+  glowGrad.addColorStop(1, 'transparent');
+
+  // Subtle gradient blobs (orbit frozen under reduced-motion)
+  const t = reduceMotion ? 0 : (time || 0) * 0.0003;
   const cx1 = particleCanvas.width * (0.3 + Math.sin(t) * 0.15);
   const cy1 = particleCanvas.height * (0.3 + Math.cos(t * 0.7) * 0.15);
   const cx2 = particleCanvas.width * (0.7 + Math.cos(t * 0.5) * 0.15);
@@ -836,37 +1042,41 @@ function drawParticles(time) {
   const blobSize = Math.min(particleCanvas.width, particleCanvas.height) * 0.4;
 
   const g1 = pCtx.createRadialGradient(cx1, cy1, 0, cx1, cy1, blobSize);
-  g1.addColorStop(0, 'rgba(8, 145, 178, 0.03)');
+  g1.addColorStop(0, `rgba(${fieldTint[0] | 0}, ${fieldTint[1] | 0}, ${fieldTint[2] | 0}, ${0.03 * fieldIntensity})`);
   g1.addColorStop(1, 'transparent');
   pCtx.fillStyle = g1;
   pCtx.fillRect(0, 0, particleCanvas.width, particleCanvas.height);
 
   const g2 = pCtx.createRadialGradient(cx2, cy2, 0, cx2, cy2, blobSize);
-  g2.addColorStop(0, 'rgba(168, 85, 247, 0.025)');
+  g2.addColorStop(0, `rgba(${fieldAccent[0] | 0}, ${fieldAccent[1] | 0}, ${fieldAccent[2] | 0}, ${0.025 * fieldIntensity})`);
   g2.addColorStop(1, 'transparent');
   pCtx.fillStyle = g2;
   pCtx.fillRect(0, 0, particleCanvas.width, particleCanvas.height);
 
   // Draw connections
+  pCtx.lineWidth = 0.8;
   for (let i = 0; i < particles.length; i++) {
     for (let j = i + 1; j < particles.length; j++) {
+      // Only connect particles in roughly the same depth plane (crisper near, ghostly far — and fewer lines).
+      if (Math.abs(particles[i].z - particles[j].z) > 0.28) continue;
       const dx = particles[i].x - particles[j].x;
       const dy = particles[i].y - particles[j].y;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      if (dist < 150) {
+      if (dist < connDist) {
+        const a = Math.min(0.30, 0.3 * (1 - dist / connDist) * fieldIntensity * Math.min(particles[i].depth, particles[j].depth) + spark);
         pCtx.beginPath();
         pCtx.moveTo(particles[i].x, particles[i].y);
         pCtx.lineTo(particles[j].x, particles[j].y);
-        pCtx.strokeStyle = lineColor(0.3 * (1 - dist / 150));
-        pCtx.lineWidth = 0.8;
+        pCtx.strokeStyle = linePrefix + a + ')';
         pCtx.stroke();
       }
     }
   }
 
-  // Mouse connection lines
-  if (mouse.x > 0 && mouse.y > 0) {
+  // Mouse connection lines (disabled under reduced-motion — repulsion is off, so nothing to connect to)
+  if (!reduceMotion && mouse.x > 0 && mouse.y > 0) {
+    pCtx.lineWidth = 0.7;
     particles.forEach(p => {
       const dx = p.x - mouse.x;
       const dy = p.y - mouse.y;
@@ -875,8 +1085,7 @@ function drawParticles(time) {
         pCtx.beginPath();
         pCtx.moveTo(p.x, p.y);
         pCtx.lineTo(mouse.x, mouse.y);
-        pCtx.strokeStyle = lineColor(0.35 * (1 - dist / mouseRadius));
-        pCtx.lineWidth = 0.7;
+        pCtx.strokeStyle = linePrefix + Math.min(0.35, 0.35 * (1 - dist / mouseRadius) * fieldIntensity) + ')';
         pCtx.stroke();
       }
     });
@@ -886,12 +1095,11 @@ function drawParticles(time) {
     p.update(time || 0);
     p.draw();
   });
-
-  requestAnimationFrame(drawParticles);
 }
 
 window.addEventListener('resize', () => {
   resizeParticleCanvas();
+  needsRender = true; // canvas was cleared + section offsets changed; redraw and re-sync
 });
 
 initParticles();
@@ -969,6 +1177,7 @@ function initMainContent() {
   initCountUp();
   initTerminalReveal();
   initScrollTooltip();
+  needsRender = true; // menu now visible (sections have real offsetTop) — recompute the tint target
 }
 
 // ==========================================
@@ -1050,6 +1259,7 @@ function initThemeToggle() {
       icon.innerHTML = '&#9790;'; // moon
       localStorage.setItem('theme', 'light');
     }
+    needsRender = true; // line color flips black<->tint; ensure a redraw under reduced-motion
   });
 }
 
