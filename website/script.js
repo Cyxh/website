@@ -29,6 +29,11 @@ function applyStillState() {
   const wasStill = prefersStill;
   prefersStill = computeStill();
   document.documentElement.classList.toggle('still', prefersStill);
+  const mt = $('#motion-toggle');
+  if (mt) {
+    mt.textContent = prefersStill ? '−' : '∿';
+    mt.title = prefersStill ? 'Motion off — click for full motion [M]' : 'Motion on [M]';
+  }
   if (wasStill !== prefersStill) {
     document.dispatchEvent(new CustomEvent('motionchange', { detail: !prefersStill }));
   }
@@ -84,6 +89,10 @@ function toggleTheme() {
 }
 
 if (themeToggleBtn) themeToggleBtn.addEventListener('click', toggleTheme);
+{
+  const mt = $('#motion-toggle');
+  if (mt) mt.addEventListener('click', toggleMotion);
+}
 document.addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
   if (k !== 't' && k !== 'm') return;
