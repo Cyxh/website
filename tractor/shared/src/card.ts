@@ -24,14 +24,10 @@ export function isTrump(card: Card, trump: TrumpInfo): boolean {
  *   Big Joker > Little Joker > trump-rank of trump suit > trump-rank of other suits > remaining trump suit cards
  *
  * No-trump ordering:
- *   trump-rank cards (all equal) > Big Joker > Little Joker
+ *   Big Joker > Little Joker > trump-rank cards (all equal)
  */
 export function cardOrder(card: Card, trump: TrumpInfo): number {
   if (card.kind === 'joker') {
-    if (trump.trumpSuit === null) {
-      // No-trump: jokers are below trump-rank cards
-      return card.jokerType === JokerType.Big ? 500 : 400;
-    }
     return card.jokerType === JokerType.Big ? 1000 : 900;
   }
 
@@ -39,8 +35,8 @@ export function cardOrder(card: Card, trump: TrumpInfo): number {
 
   if (suited.rank === trump.trumpRank) {
     if (trump.trumpSuit === null) {
-      // No-trump: all trump-rank cards are equal and highest
-      return 600;
+      // No-trump: all trump-rank cards are equal, directly below the jokers
+      return 800;
     }
     // Trump rank of trump suit is highest non-joker
     if (suited.suit === trump.trumpSuit) return 800;

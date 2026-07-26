@@ -250,6 +250,7 @@ export interface GameState {
   noBidSelectionCard: Card | null;  // the random card drawn for selection
   kittyPickedUp: boolean;           // whether leader has picked up kitty
   readyPlayers: Set<string>;        // players who confirmed ready to play
+  forcedLead: { playerId: string; cards: Card[] } | null; // failed-throw component the player must lead
 }
 
 export type ClientMessage =
@@ -303,6 +304,7 @@ export interface PlayerView {
   noBidSelectionCard: Card | null;
   kittyPickedUp: boolean;
   readyPlayers: string[];           // player IDs who are ready
+  forcedLead?: { playerId: string; cards: Card[] } | null;
   chatMessages: ChatMessage[];
   connectedPlayers?: string[];        // player IDs currently connected
   devMode?: boolean;

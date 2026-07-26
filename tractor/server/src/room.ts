@@ -372,6 +372,8 @@ export class Room {
     return {
       ...view,
       hand: [], // spectators can't see hands by default
+      // don't leak the leader's private kitty during the exchange
+      kitty: view.phase === GamePhase.KittyExchange ? null : view.kitty,
     };
   }
 
@@ -411,6 +413,7 @@ export class Room {
           const spectatorView = {
             ...view,
             hand: [], // Don't show hand by default
+            kitty: view.phase === GamePhase.KittyExchange ? null : view.kitty,
             connectedPlayers,
             isSpectator: true,
             spectatorOf: null as string | null,

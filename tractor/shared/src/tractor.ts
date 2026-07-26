@@ -105,10 +105,10 @@ function getTrumpSuitFullOrdering(trump: TrumpInfo): number[] {
     // Big joker (1000)
     orders.push(1000);
   } else {
-    // No-trump: Little joker, Big joker, then trump-rank cards
-    orders.push(400); // LJ
-    orders.push(500); // BJ
-    orders.push(600); // trump rank cards
+    // No-trump: trump-rank cards, then Little joker, then Big joker
+    orders.push(800); // trump rank cards
+    orders.push(900); // LJ
+    orders.push(1000); // BJ
   }
 
   return orders;
@@ -198,4 +198,48 @@ export function compareComponents(
   const maxA = Math.max(...a.cards.map(c => cardOrder(c, trump)));
   const maxB = Math.max(...b.cards.map(c => cardOrder(c, trump)));
   return maxA - maxB;
+}
+
+/**
+ * Compare two decompositions that both structurally match the same lead format.
+ * Rules: to defeat a play, EVERY component must be individually defeated. Within
+ * each component type (groupSize, length), sort both sides' components by
+ * strength; the challenger wins only if it is strictly stronger pairwise.
+ * Both decompositions must have the same multiset of types.
+ */
+export function decompBeatsDecomp(
+  c: TrickComponent[],
+  w: TrickComponent[],
+  trump: TrumpInfo
+): boolean {
+  if (c.length !== w.length) return false;
+
+  const typeKey = (t: TrickComponent) => `${t.groupSize}:${t.length}`;
+  const cByType = new Map<string, TrickComponent[]>();
+  const wByType = new Map<string, TrickComponent[]>();
+  for (const comp of c) {
+    const k = typeKey(comp);
+    if (!cByType.has(k)) cByType.set(k, []);
+    cByType.get(k)!.push(comp);
+  }
+  for (const comp of w) {
+    const k = typeKey(comp);
+    if (!wByType.has(k)) wByType.set(k, []);
+    wByType.get(k)!.push(comp);
+  }
+
+  if (cByType.size !== wByType.size) return false;
+
+  const strength = (comp: TrickComponent) => Math.max(...comp.cards.map(card => cardOrder(card, trump)));
+
+  for (const [key, cComps] of cByType) {
+    const wComps = wByType.get(key);
+    if (!wComps || cComps.length !== wComps.length) return false;
+    const cSorted = cComps.map(strength).sort((a, b) => b - a);
+    const wSorted = wComps.map(strength).sort((a, b) => b - a);
+    for (let i = 0; i < cSorted.length; i++) {
+      if (cSorted[i] <= wSorted[i]) return false;
+    }
+  }
+  return true;
 }

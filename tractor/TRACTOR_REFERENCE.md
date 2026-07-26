@@ -296,3 +296,15 @@ _Record all edits below so future sessions know what changed._
 | 2026-04-08 | Stronger disconnected player styling (red border + tinted bg) in room lobby | RoomLobby.css |
 | 2026-04-08 | Click-to-copy room code with "Copied!" feedback | RoomLobby.tsx, RoomLobby.css |
 | 2026-04-08 | Disconnected players stay in room (marked disconnected, can rejoin); explicit leave still removes; 2-min grace period before cleanup; dev mode ids update on rejoin; join_room auto-rejoins by name | room.ts, index.ts, useGame.ts |
+| 2026-07-26 | Rules audit (vs robertying.com/shengji): follow-format validation rewritten — obligation is now coverage-based (bestFormatScore: pairs/tuples S1, tractor structure S2), so ANY pair/tractor of the player's choice satisfies the format; also enforces pair-with-triple-lead and partial-tractor priority | trick.ts |
+| 2026-07-26 | No-trump card order fixed: Big Joker > Little Joker > trump-rank cards (was inverted); NT tractor adjacency now rank-pair↔LJ↔BJ | card.ts, tractor.ts |
+| 2026-07-26 | Throw-vs-throw comparison now pairwise per component type (every component must be individually beaten), not max-only | tractor.ts |
+| 2026-07-26 | Kitty size auto-nudged to nearest value keeping hands equal (fixes 3p/6p unequal deal + endgame deadlock) | game.ts |
+| 2026-07-26 | Tractor fixed teams: alternating seats for any EVEN player count (6p now 3v3); odd counts still leader-only (use Finding Friends) | game.ts |
+| 2026-07-26 | Bid overturning per robertying: strictly more cards, then jokers (BJ>LJ); same-length suit swaps (incl. by same player) no longer allowed; round-1 first-bidder-keeps-kitty retained as house rule | game.ts |
+| 2026-07-26 | Failed throw: penalty now honors throwPenalty setting (none by default, flat 10 for tenPoints, no double-charge); thrower is forced to lead the beatable component (forcedLead state) | trick.ts, game.ts, types.ts |
+| 2026-07-26 | Finding Friends: revealed friend brings their captured points to the defenders | game.ts |
+| 2026-07-26 | Game end: requires successfully DEFENDING at max rank (reaching A no longer ends the game) | game.ts |
+| 2026-07-26 | defendingPoints now tracks real defender trick points (was total-minus-attacking, could go negative) | game.ts |
+| 2026-07-26 | Spectators no longer see the leader's kitty during KittyExchange | room.ts |
+| 2026-07-26 | Added .audit/ test suite (tsx batteries 01-06: units, engine, full-game sims, WS e2e) | .audit/* |

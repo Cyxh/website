@@ -13,8 +13,19 @@ import {
   isValidPlay, determineTrickWinner,
 } from 'tractor-shared';
 import {
-  calculateRoundResult, advanceRank, hasWonGame,
+  calculateRoundResult, advanceRank,
 } from 'tractor-shared';
+
+function faceKey(c: Card): string {
+  return c.kind === 'joker' ? `J:${c.jokerType}` : `S:${c.suit}:${c.rank}`;
+}
+
+function sameFaceMultiset(a: Card[], b: Card[]): boolean {
+  if (a.length !== b.length) return false;
+  const ka = a.map(faceKey).sort();
+  const kb = b.map(faceKey).sort();
+  return ka.every((k, i) => k === kb[i]);
+}
 
 export class Game {
   state: GameState;
@@ -44,6 +55,7 @@ export class Game {
       noBidSelectionCard: null,
       kittyPickedUp: false,
       readyPlayers: new Set<string>(),
+      forcedLead: null,
     };
   }
 
@@ -53,8 +65,18 @@ export class Game {
 
     let kittySize = settings.kittySize;
     if (kittySize <= 0 || kittySize >= deck.length) {
-      const remainder = deck.length % settings.numPlayers;
-      kittySize = remainder === 0 ? settings.numPlayers : remainder;
+      const remainder = deck.length % players.length;
+      kittySize = remainder === 0 ? players.length : remainder;
+    }
+    // Every player must receive the same number of cards: nudge the kitty size
+    // to the nearest value congruent to (deck size mod player count).
+    const n = players.length;
+    if ((deck.length - kittySize) % n !== 0) {
+      const base = deck.length % n;
+      const down = kittySize - ((((kittySize - base) % n) + n) % n);
+      const up = down + n;
+      kittySize = (down >= 1 && (kittySize - down) <= (up - kittySize)) ? down : up;
+      if (kittySize >= deck.length) kittySize = down;
     }
 
     const kitty = deck.slice(deck.length - kittySize);
@@ -72,10 +94,10 @@ export class Game {
     const defendingTeam = new Set<string>();
     const isFirstRound = this.state.roundNumber === 0;
     if (!isFirstRound) {
-      if (settings.gameMode === 'tractor') {
-        defendingTeam.add(leader.id);
-        if (players.length === 4) {
-          defendingTeam.add(players[(currentLeaderIdx + 2) % 4].id);
+      if (settings.gameMode === 'tractor' && players.length % 2 === 0) {
+        // Fixed teams: alternating seats starting from the leader
+        for (let i = 0; i < players.length; i += 2) {
+          defendingTeam.add(players[(currentLeaderIdx + i) % players.length].id);
         }
       } else {
         defendingTeam.add(leader.id);
@@ -103,6 +125,7 @@ export class Game {
       noBidSelectionCard: null,
       kittyPickedUp: false,
       readyPlayers: new Set<string>(),
+      forcedLead: null,
     };
 
     for (const p of players) {
@@ -185,7 +208,7 @@ export class Game {
 
     if (this.state.bids.length > 0) {
       const lastBid = this.state.bids[this.state.bids.length - 1];
-      if (!this.bidBeats(cards, lastBid.cards, playerId, lastBid.playerId)) {
+      if (!this.bidBeats(cards, lastBid.cards)) {
         return { success: false, reason: 'Bid must be stronger than current bid' };
       }
     }
@@ -237,36 +260,37 @@ export class Game {
     return { success: true };
   }
 
-  private bidBeats(newCards: Card[], oldCards: Card[], newPlayerId: string, oldPlayerId: string): boolean {
-    if (newCards.length > oldCards.length) return true;
-    if (newCards.length < oldCards.length) return false;
+  /**
+   * A bid beats the previous bid first by card count, then by card value
+   * (jokers over suited, big joker over little joker). Equal-strength bids —
+   * including same-length bids of a different suit, by anyone — never overturn.
+   */
+  private bidBeats(newCards: Card[], oldCards: Card[]): boolean {
+    if (newCards.length !== oldCards.length) return newCards.length > oldCards.length;
 
-    if (newPlayerId === oldPlayerId) return true;
+    // Equal length: under 'greaterLength' nothing else counts
+    if (this.state.settings.bidPolicy === 'greaterLength') return false;
 
-    const { bidPolicy } = this.state.settings;
     const newCard = newCards[0];
     const oldCard = oldCards[0];
-
-    if (bidPolicy === 'greaterLength') return newCards.length > oldCards.length;
-
     if (newCard.kind === 'joker' && oldCard.kind !== 'joker') return true;
     if (newCard.kind === 'joker' && oldCard.kind === 'joker') {
-      if (newCard.jokerType === JokerType.Big && oldCard.jokerType === JokerType.Little) return true;
+      return newCard.jokerType === JokerType.Big && oldCard.jokerType === JokerType.Little;
     }
-
-    if (bidPolicy === 'jokerOrGreaterLength') return newCards.length > oldCards.length;
-
-    return newCard.kind === 'suited' && oldCard.kind === 'suited' && newCard.suit !== oldCard.suit;
+    return false;
   }
 
   updateTeams(): void {
-    const leader = this.state.players[this.state.currentLeaderIdx];
+    const n = this.state.players.length;
     this.state.defendingTeam.clear();
-    this.state.defendingTeam.add(leader.id);
 
-    if (this.state.settings.gameMode === 'tractor' && this.state.players.length === 4) {
-      const partnerIdx = (this.state.currentLeaderIdx + 2) % 4;
-      this.state.defendingTeam.add(this.state.players[partnerIdx].id);
+    if (this.state.settings.gameMode === 'tractor' && n % 2 === 0) {
+      // Fixed teams: alternating seats starting from the leader
+      for (let i = 0; i < n; i += 2) {
+        this.state.defendingTeam.add(this.state.players[(this.state.currentLeaderIdx + i) % n].id);
+      }
+    } else {
+      this.state.defendingTeam.add(this.state.players[this.state.currentLeaderIdx].id);
     }
 
     for (const p of this.state.players) {
@@ -448,8 +472,19 @@ export class Game {
       .filter(p => p.id !== playerId)
       .map(p => this.state.hands[p.id]);
 
+    // A failed throw forces this player to lead the beatable component
+    const forced = this.state.forcedLead;
+    if (forced && forced.playerId === playerId && trick.plays.length === 0) {
+      if (!sameFaceMultiset(cards, forced.cards)) {
+        return { success: false, reason: 'You must lead the beatable component from your failed throw' };
+      }
+    }
+
     const validation = isValidPlay(cards, hand, trick, this.state.trumpInfo, this.state.settings, otherHands);
     if (!validation.valid) {
+      if (validation.forcedCards && trick.plays.length === 0) {
+        this.state.forcedLead = { playerId, cards: validation.forcedCards };
+      }
       if (validation.throwPenalty && validation.throwPenalty > 0) {
         const player = this.state.players[playerIdx];
         if (player.team === 'defending') {
@@ -459,6 +494,10 @@ export class Game {
         }
       }
       return { success: false, reason: validation.reason };
+    }
+
+    if (forced && forced.playerId === playerId && trick.plays.length === 0) {
+      this.state.forcedLead = null;
     }
 
     for (const card of cards) {
@@ -507,9 +546,21 @@ export class Game {
           if (count >= decl.ordinal) {
             decl.found = true;
             decl.foundByPlayerId = playerId;
-            this.state.defendingTeam.add(playerId);
-            const player = this.state.players.find(p => p.id === playerId);
-            if (player) player.team = 'defending';
+            if (!this.state.defendingTeam.has(playerId)) {
+              // The revealed friend brings the points they have captured so far
+              const revealedIdx = this.state.players.findIndex(p => p.id === playerId);
+              let carried = 0;
+              for (const t of this.state.tricks) {
+                if (t.winner === revealedIdx) carried += t.points;
+              }
+              if (carried > 0) {
+                this.state.attackingPoints = Math.max(0, this.state.attackingPoints - carried);
+                this.state.defendingPoints += carried;
+              }
+              this.state.defendingTeam.add(playerId);
+              const player = this.state.players.find(p => p.id === playerId);
+              if (player) player.team = 'defending';
+            }
           }
         }
       }
@@ -527,6 +578,8 @@ export class Game {
     const winnerPlayer = this.state.players[trick.winner];
     if (winnerPlayer.team === 'attacking') {
       this.state.attackingPoints += points;
+    } else {
+      this.state.defendingPoints += points;
     }
 
     this.state.tricks.push(trick);
@@ -553,6 +606,12 @@ export class Game {
     const lastTrick = this.state.tricks[this.state.tricks.length - 1];
     const lastWinner = this.state.players[lastTrick.winner!];
     const lastTrickWonByAttacking = lastWinner.team === 'attacking';
+
+    // The game is won by successfully DEFENDING a round at the max rank —
+    // note the defenders' rank before advancement.
+    const defendersAtMaxRank = this.state.players.some(
+      p => p.team === 'defending' && p.rank >= Rank.Ace
+    );
 
     const result = calculateRoundResult(
       this.state.attackingPoints,
@@ -592,8 +651,8 @@ export class Game {
       }
     }
 
-    const winner = this.state.players.find(p => hasWonGame(p.rank, this.state.settings.maxRank));
-    this.state.phase = winner ? GamePhase.GameOver : GamePhase.Scoring;
+    const wonGame = result.defendingAdvance > 0 && defendersAtMaxRank;
+    this.state.phase = wonGame ? GamePhase.GameOver : GamePhase.Scoring;
   }
 
   getPlayerView(playerId: string): PlayerView {
@@ -643,7 +702,7 @@ export class Game {
       tricks: this.state.tricks,
       currentTrick: this.state.currentTrick,
       attackingPoints: this.state.attackingPoints,
-      defendingPoints: (this.state.settings.numDecks * 100) - this.state.attackingPoints,
+      defendingPoints: this.state.defendingPoints,
       friendDeclarations: this.state.friendDeclarations,
       myIndex: playerIdx,
       drawComplete: this.state.phase !== GamePhase.Drawing,
@@ -654,6 +713,7 @@ export class Game {
       noBidSelectionCard: this.state.noBidSelectionCard,
       kittyPickedUp: this.state.kittyPickedUp,
       readyPlayers: Array.from(this.state.readyPlayers),
+      forcedLead: this.state.forcedLead,
       chatMessages: this.chatMessages,
     };
   }
